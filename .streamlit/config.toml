@@ -1,0 +1,8 @@
+[theme]
+# Force pure light theme — never follow the OS dark-mode setting.
+base = "light"
+primaryColor = "#3D2314"
+backgroundColor = "#FDFBF7"
+secondaryBackgroundColor = "#F4EEE3"
+textColor = "#2A1A0E"
+font = "sans serif"

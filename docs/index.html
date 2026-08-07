@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VendorScoutAI — Live Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--espresso:#3D2314;--ink:#2A1A0E;--ink-soft:#6E5B4C;--cream:#FDFBF7;--card:#FFF;--line:#E7DFD2;--wash:#F4EEE3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:'Nunito',sans-serif}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:290px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);padding:1.5rem 1.25rem}
+.sidebar h2{font-size:1.15rem;font-weight:800;color:var(--espresso);border-bottom:2px solid var(--espresso);padding-bottom:.5rem;margin:0 0 1.1rem}
+.field{margin-bottom:.85rem}
+.field label{display:block;font-size:.82rem;font-weight:600;margin-bottom:.25rem}
+.field input{width:100%;padding:.5rem .65rem;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--ink);background:var(--card)}
+.main{flex:1;padding:1.5rem 2rem 4rem;max-width:1180px}
+.header{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--espresso);border-radius:14px;padding:1.5rem 2rem 1.3rem;text-align:center;box-shadow:0 2px 12px rgba(61,35,20,.06)}
+.header h1{margin:0;font-size:2.1rem;font-weight:800;color:var(--espresso)}
+.header p{margin:.45rem 0 0;color:var(--ink-soft);font-size:.95rem}
+.header b{color:var(--espresso)}
+.cta{display:block;margin:1.3rem auto;padding:.65rem 2.2rem;background:var(--espresso);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer}
+.cta:disabled{opacity:.55;cursor:default}
+.btn{padding:.5rem 1rem;border-radius:10px;font-family:inherit;font-weight:700;font-size:.85rem;cursor:pointer;border:1.5px solid var(--espresso);background:var(--card);color:var(--espresso);width:100%;margin-top:.5rem}
+.btn.primary{background:var(--espresso);color:#fff;border-color:var(--espresso)}
+.trace{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1.2rem;font-size:.88rem;line-height:1.7}
+.trace .who{font-weight:800;color:var(--espresso);margin-top:.6rem}
+.trace code{background:var(--wash);color:var(--espresso);border-radius:6px;padding:.1rem .35rem;font-size:.82rem}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2rem}
+@media(max-width:900px){.cols{grid-template-columns:1fr}.layout{flex-direction:column}.sidebar{width:100%}}
+.section{font-size:1.05rem;font-weight:800;color:var(--espresso);margin:.4rem 0 .7rem;padding-bottom:.35rem;border-bottom:2px solid var(--line)}
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--espresso);border-radius:12px;padding:1rem 1.2rem;margin-bottom:.8rem;box-shadow:0 1px 6px rgba(61,35,20,.05)}
+.card b{color:var(--espresso)}
+.meta{margin-top:.5rem;font-size:.87rem;color:var(--ink-soft)}
+.badge{display:inline-block;padding:.16rem .6rem;border-radius:999px;font-size:.73rem;font-weight:700;margin:.15rem .25rem .15rem 0;white-space:nowrap}
+.chead{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .5rem}
+.badge.out{background:var(--wash);color:var(--espresso);border:1px solid var(--line)}
+.badge.fill{background:var(--espresso);color:#fff}
+.track{background:var(--wash);border-radius:999px;height:7px;margin-top:.4rem}
+.fill{background:var(--espresso);height:7px;border-radius:999px}
+.chat{background:#EFE7DA;border:1px solid var(--line);border-radius:12px;padding:1rem;min-height:200px;max-height:520px;overflow-y:auto;box-shadow:inset 0 1px 4px rgba(61,35,20,.07)}
+.row{display:flex;margin-bottom:.6rem}.row.out{justify-content:flex-end}.row.in{justify-content:flex-start}
+.bub{max-width:76%;padding:.6rem .9rem;border-radius:14px;font-size:.9rem;line-height:1.5;box-shadow:0 1px 3px rgba(61,35,20,.14)}
+.bub.out{background:var(--espresso);color:#fff;border-bottom-right-radius:3px}
+.bub.in{background:#fff;border:1px solid #D9CDBB;border-bottom-left-radius:3px}
+.lab{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin-bottom:.2rem}
+.bub.out .lab{color:#D9C3AE}.bub.in .lab{color:var(--espresso)}
+.switch{text-align:center;font-size:.8rem;color:var(--espresso);background:var(--wash);border:1px dashed var(--espresso);border-radius:10px;padding:.45rem .7rem;margin:.6rem 0;font-weight:600}
+.alert{background:var(--card);border:1.5px solid var(--espresso);border-radius:10px;padding:.8rem 1.1rem;margin:1.2rem 0;font-size:.9rem}
+.invite{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--espresso);border-radius:14px;padding:1.3rem 1.6rem;box-shadow:0 2px 12px rgba(61,35,20,.08)}
+.invite h3{color:var(--espresso);margin:0 0 .6rem;font-weight:800}
+.terms{display:flex;flex-wrap:wrap;gap:.5rem 1.6rem;margin-top:.5rem}
+.term{font-size:.92rem}.term small{display:block;color:var(--ink-soft);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.acts{display:flex;gap:1rem;margin-top:1rem}
+.receipt{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(61,35,20,.1);margin-top:.8rem}
+.rhead{background:var(--espresso);padding:1.1rem 1.6rem;text-align:center}
+.rhead .t{color:#fff;font-size:1.25rem;font-weight:800}
+.rhead .s{color:#D9C3AE;font-size:.85rem;margin-top:.15rem}.rhead .s b{color:#fff}
+.hero{text-align:center;padding:1.5rem 1.6rem 1.2rem;border-bottom:1px dashed var(--line)}
+.hero .i{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft)}
+.hero .tot{font-size:2.6rem;font-weight:800;color:var(--espresso);line-height:1.15;margin:.25rem 0 .1rem}
+.hero .c{font-size:.88rem;color:var(--ink-soft)}
+.rrows{padding:.4rem 1.6rem}
+.rrow{display:flex;justify-content:space-between;gap:1.5rem;padding:.7rem 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.rrow:last-child{border-bottom:none}
+.rrow span{color:var(--ink-soft);font-weight:600;white-space:nowrap}.rrow b{color:var(--espresso);text-align:right}
+.rfoot{background:var(--wash);padding:1rem 1.6rem 1.2rem;text-align:center}
+.rfoot a{display:inline-block;background:var(--espresso);color:#fff;text-decoration:none;font-weight:700;font-size:.9rem;padding:.5rem 1.3rem;border-radius:10px}
+.note{margin-top:.8rem;font-size:.8rem;color:var(--ink-soft);line-height:1.5}
+.hidden{display:none}
+.caption{font-size:.8rem;color:var(--ink-soft);text-align:center;margin-bottom:.6rem}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--espresso);margin-right:6px;animation:p 1.2s infinite}
+@keyframes p{0%,100%{opacity:.25}50%{opacity:1}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <h2>Material Requirement</h2>
+    <div class="field"><label>Your business name</label><input id="f_biz" value="GAMLA"></div>
+    <div class="field"><label>Business description</label><input id="f_desc" value="decorative pots &amp; plants"></div>
+    <div class="field"><label>Item</label><input id="f_item" value="Glass and Steel Water Bottle"></div>
+    <div class="field"><label>Quantity</label><input id="f_qty" value="400"></div>
+    <div class="field"><label>Budget per unit (INR)</label><input id="f_budget" value="150"></div>
+    <div class="field"><label>Timeline</label><input id="f_time" value="3 weeks"></div>
+    <div class="field"><label>Ship to</label><input id="f_loc" value="Pune, India"></div>
+    <button class="btn" onclick="clearReq()">Clear</button>
+    <button class="btn" onclick="location.reload()">Reset demo</button>
+    <p class="note">Static demo build — no live API calls.</p>
+  </aside>
+
+  <main class="main">
+    <div class="header">
+      <h1>🧭 VendorScoutAI</h1>
+      <p>Autonomous sourcing • verified vendors • AI-negotiated deals on WhatsApp — <b>finalized only by you.</b></p>
+    </div>
+
+    <button class="cta" id="startBtn" onclick="startSourcing()">Start Sourcing</button>
+    <p class="caption" id="cap"></p>
+
+    <div id="traceBox" class="trace hidden"></div>
+
+    <div id="results" class="hidden">
+      <div class="cols">
+        <div>
+          <div class="section">🛡️ Verified Vendors</div>
+          <div id="vendors"></div>
+        </div>
+        <div>
+          <div class="section">💬 WhatsApp Negotiation</div>
+          <div class="chat" id="chat"></div>
+        </div>
+      </div>
+      <div id="tail"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+const VENDORS=[
+ {n:"Aditya Materials",p:155,moq:250,loc:"Bengaluru, Karnataka",c:"919130039898",s:92,pos:["GST registered","TrustSEAL certification","export history"],flags:[]},
+ {n:"Karnataka Craft Traders",p:170,moq:400,loc:"Mysuru, Karnataka",c:"+91 99456 78123",s:78,pos:["GST registered","strong customer reviews"],flags:[]},
+ {n:"Deccan Steel & Glass",p:149,moq:300,loc:"Hyderabad, Telangana",c:"+91 90000 77321",s:74,pos:["GST registered","customer reviews present"],flags:[]}
+];
+const V1="Deccan Steel & Glass",V2="Karnataka Craft Traders",V3="Aditya Materials";
+const CHAT=[
+ {d:"out",v:V1,b:"Hello! I'm an AI assistant reaching out on behalf of GAMLA, a decorative pots and plants business in Pune. We're sourcing 400 glass-and-steel water bottles for delivery within 3 weeks. Before we continue — would you prefer English, हिंदी, or ಕನ್ನಡ?"},
+ {d:"in",v:V1,b:"English is fine. For 400 pieces our rate is 168 INR per unit, delivery in 4 weeks."},
+ {d:"out",v:V1,b:"Thanks for the quick quote. Our budget is 150 INR per unit and we need delivery within 3 weeks. Could you work to 150 at this volume?"},
+ {d:"in",v:V1,b:"Sorry, 162 is our best for this quantity and 4 weeks is the earliest we can dispatch."},
+ {d:"out",v:V1,b:"Understood — that's outside what we can commit to right now. Thank you for your time."},
+ {sw:{f:V1,t:V2,r:"best offer 162 INR/unit vs 150 budget, and 4-week delivery misses the 3-week timeline"}},
+ {d:"out",v:V2,b:"ನಮಸ್ಕಾರ! ನಾನು GAMLA ಪರವಾಗಿ ಮಾತನಾಡುತ್ತಿರುವ AI ಸಹಾಯಕ — GAMLA ಪುಣೆಯಲ್ಲಿ ಅಲಂಕಾರಿಕ ಕುಂಡಗಳು ಮತ್ತು ಗಿಡಗಳ ವ್ಯಾಪಾರ ನಡೆಸುತ್ತಿದೆ. ನಮಗೆ 3 ವಾರಗಳಲ್ಲಿ 400 ಗ್ಲಾಸ್ ಮತ್ತು ಸ್ಟೀಲ್ ವಾಟರ್ ಬಾಟಲಿಗಳು ಬೇಕಾಗಿವೆ. ದಯವಿಟ್ಟು ತಿಳಿಸಿ, ನೀವು English, ಹಿಂದಿ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ ಮಾತನಾಡಲು ಬಯಸುವಿರಾ?"},
+ {d:"in",v:V2,b:"ಕನ್ನಡ ಚೆನ್ನಾಗಿದೆ. 400 ಬಾಟಲಿಗಳಿಗೆ ನಮ್ಮ ದರ 170 ರೂಪಾಯಿ ಪ್ರತಿ ಯೂನಿಟ್, ಡೆಲಿವರಿ 4 ವಾರಗಳಲ್ಲಿ."},
+ {d:"out",v:V2,b:"ಧನ್ಯವಾದಗಳು. ನಮ್ಮ ಬಜೆಟ್ 150 ರೂಪಾಯಿ ಪ್ರತಿ ಯೂನಿಟ್ ಮತ್ತು ಡೆಲಿವರಿ 3 ವಾರಗಳಲ್ಲಿ ಬೇಕು. ದಯವಿಟ್ಟು 150ಕ್ಕೆ ಸಾಧ್ಯವೇ?"},
+ {d:"in",v:V2,b:"ಕ್ಷಮಿಸಿ, ಈ ಪ್ರಮಾಣಕ್ಕೆ 165 ರೂಪಾಯಿಗಿಂತ ಕಡಿಮೆ ಸಾಧ್ಯವಿಲ್ಲ, ಮತ್ತು ಡೆಲಿವರಿ 3 ವಾರಗಳಲ್ಲಿ ಆಗುವುದಿಲ್ಲ."},
+ {d:"out",v:V2,b:"ಅರ್ಥವಾಯಿತು — ಸದ್ಯಕ್ಕೆ ಇದು ನಮಗೆ ಸಾಧ್ಯವಿಲ್ಲ. ಸಮಯ ನೀಡಿದ್ದಕ್ಕೆ ಧನ್ಯವಾದಗಳು."},
+ {sw:{f:V2,t:V3,r:"best offer 165 INR/unit vs 150 budget, and 4-week delivery misses the 3-week timeline"}},
+ {d:"out",v:V3,b:"नमस्ते! मैं GAMLA की ओर से एक AI सहायक हूँ — GAMLA पुणे में सजावटी गमले और पौधों का व्यवसाय है। हमें 3 सप्ताह में 400 ग्लास-एंड-स्टील वॉटर बोतल चाहिए। आप English, हिंदी या ಕನ್ನಡ में से किस भाषा में बात करना पसंद करेंगे?"},
+ {d:"in",v:V3,b:"हिंदी ठीक रहेगी। 400 पीस के लिए हमारा रेट 155 रुपये प्रति यूनिट है, डिलीवरी 3 हफ्ते में।"},
+ {d:"out",v:V3,b:"धन्यवाद! हमारा बजट 150 रुपये प्रति यूनिट है। क्या आप 400 यूनिट पर 145 रुपये कर सकते हैं?"},
+ {d:"in",v:V3,b:"145 थोड़ा कम है। हम 140 रुपये प्रति यूनिट दे सकते हैं अगर 50% एडवांस हो — डिलीवरी 3 हफ्ते में पुणे तक, शिपिंग 3,000 रुपये अलग से।"},
+ {d:"out",v:V3,b:"बहुत बढ़िया — 140 रुपये प्रति यूनिट, 50% एडवांस और बाकी डिलीवरी पर, 3 हफ्ते में पुणे। मैं यह प्रस्ताव व्यवसाय के मालिक को भेज रहा हूँ। अंतिम पुष्टि उनकी मंज़ूरी के बाद ही होगी।"}
+];
+const TRACE=[
+ ["🔎 Sourcing Agent","→ calling <code>google_search</code> (query=glass steel water bottle supplier India)"],
+ ["🔎 Sourcing Agent","✓ found 4 candidate suppliers from grounded results"],
+ ["🛡️ Verification Agent","→ calling <code>assess_vendor</code> (name=Aditya Materials)"],
+ ["🛡️ Verification Agent","→ calling <code>assess_vendor</code> (name=ValueMart Exports)"],
+ ["🛡️ Verification Agent","⚠️ <b>ValueMart Exports</b> flagged — price 58 INR is 63% below market median, no contact, no address"],
+ ["🛡️ Verification Agent","✓ ranked top 3 by trust score"]
+];
+const NEG_TRACE=[
+ ["🤝 Negotiation Agent","→ calling <code>set_active_vendor</code> (Deccan Steel &amp; Glass)"],
+ ["🤝 Negotiation Agent","→ calling <code>send_whatsapp_message</code> — AI disclosure + language choice"],
+ ["🤝 Negotiation Agent","✓ <code>wait_for_vendor_reply</code> → 168 INR, 4 weeks"],
+ ["🤝 Negotiation Agent","→ calling <code>try_next_vendor</code> — over budget, misses timeline"],
+ ["🤝 Negotiation Agent","→ negotiating in Kannada with Karnataka Craft Traders"],
+ ["🤝 Negotiation Agent","→ calling <code>try_next_vendor</code> — still over budget, misses timeline"],
+ ["🤝 Negotiation Agent","→ negotiating in Hindi with Aditya Materials"],
+ ["🤝 Negotiation Agent","→ calling <code>propose_deal_terms</code> (140 INR × 400)"],
+ ["🤝 Negotiation Agent","⛔ <b>GUARDRAIL BLOCKED</b> <code>finalize_deal</code> — human approval required"]
+];
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function clearReq(){["f_biz","f_desc","f_item","f_qty","f_budget","f_time","f_loc"].forEach(i=>$(i).value="")}
+
+async function typeTrace(lines,delay=650){
+  const box=$("traceBox");box.classList.remove("hidden");
+  for(const [who,txt] of lines){
+    box.insertAdjacentHTML("beforeend",`<div class="who">${who}</div><div>${txt}</div>`);
+    box.scrollTop=box.scrollHeight;
+    await sleep(delay);
+  }
+}
+function vendorCard(v,i,sel){
+  return `<div class="card"><div class="chead"><b>#${i+1} ${v.n}</b><span class="badge fill">Trust ${v.s}/100</span></div>
+  <div class="track"><div class="fill" style="width:${v.s}%"></div></div>
+  <div class="meta">${v.loc} · ₹${v.p} /unit · MOQ ${v.moq} · ${v.c}</div>
+  <div style="margin-top:.4rem">${v.pos.map(p=>`<span class="badge out">${p}</span>`).join("")}${v.flags.map(f=>`<span class="badge fill">${f}</span>`).join("")}</div>
+  ${sel?`<button class="btn ${i===0?"primary":""}" onclick="contactVendor(${i})">Contact ${v.c}</button>`:""}</div>`;
+}
+async function startSourcing(){
+  $("startBtn").disabled=true;$("cap").textContent="";
+  $("traceBox").innerHTML="";
+  await typeTrace(TRACE);
+  $("results").classList.remove("hidden");
+  $("vendors").innerHTML=VENDORS.map((v,i)=>vendorCard(v,i,true)).join("");
+  $("chat").innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:170px;text-align:center;color:var(--ink-soft);font-size:.9rem">No conversation yet.<br>Pick a vendor to contact.</div>`;
+  $("tail").innerHTML=`<div class="alert">Vendors verified and ranked. <b>Choose who to contact first</b> — if they can't meet your terms, the agent moves to the next best on its own.</div>`;
+}
+async function contactVendor(){
+  $("vendors").innerHTML=VENDORS.map((v,i)=>vendorCard(v,i,false)).join("");
+  $("tail").innerHTML="";$("chat").innerHTML="";
+  await typeTrace(NEG_TRACE,700);
+  for(const m of CHAT){
+    if(m.sw){$("chat").insertAdjacentHTML("beforeend",`<div class="switch">🔄 Switched vendor: <b>${m.sw.f}</b> → <b>${m.sw.t}</b> — ${m.sw.r}</div>`);}
+    else{$("chat").insertAdjacentHTML("beforeend",`<div class="row ${m.d}"><div class="bub ${m.d}"><div class="lab">${m.d==="out"?"VendorScoutAI (AI)":m.v}</div>${m.b}</div></div>`);}
+    $("chat").scrollTop=$("chat").scrollHeight;await sleep(750);
+  }
+  $("tail").innerHTML=`<div class="alert">⛔ <b>Deal-Lock Guardrail</b> blocked 1 autonomous finalization attempt. Nothing is binding until you decide below.</div>
+  <div class="invite"><h3>📋 Proposed Deal — your decision</h3>
+  <b style="color:var(--espresso);font-size:1.05rem">Aditya Materials</b> — Glass and Steel Water Bottle
+  <div class="terms">
+    <div class="term"><small>Quantity</small>400</div>
+    <div class="term"><small>Unit price</small>₹140</div>
+    <div class="term"><small>Total</small>₹56,000</div>
+    <div class="term"><small>Delivery</small>3 weeks to Pune</div>
+    <div class="term"><small>Payment</small>50% advance, 50% on delivery</div>
+  </div></div>
+  <div class="acts"><button class="cta" style="margin:0" onclick="lockDeal()">🔒 Accept &amp; Lock Deal</button>
+  <button class="btn" style="width:auto;margin:0" onclick="rejectDeal()">Reject</button></div>`;
+}
+async function lockDeal(){
+  $("tail").innerHTML=`<div class="alert"><span class="dot"></span>Finalizing with vendor…</div>`;
+  await sleep(1200);
+  $("chat").insertAdjacentHTML("beforeend",`<div class="row out"><div class="bub out"><div class="lab">VendorScoutAI (AI)</div>पुष्टि हो गई! GAMLA की ओर से ऑर्डर कन्फर्म — 400 यूनिट @ 140 रुपये, कुल 56,000 रुपये, 50% एडवांस, 3 हफ्ते में पुणे डिलीवरी। धन्यवाद!</div></div>`);
+  $("chat").scrollTop=$("chat").scrollHeight;
+  $("tail").innerHTML=`<div class="alert">✅ Deal finalized with human approval.</div>
+  <div class="receipt">
+    <div class="rhead"><div class="t">Deal Confirmed</div><div class="s">Agreed with <b>Aditya Materials</b> · approved by you</div></div>
+    <div class="hero"><div class="i">Glass and Steel Water Bottle</div><div class="tot">₹56,000</div><div class="c">400 units × ₹140 per unit</div></div>
+    <div class="rrows">
+      <div class="rrow"><span>Delivery</span><b>3 weeks to Pune</b></div>
+      <div class="rrow"><span>Payment terms</span><b>50% advance, 50% on delivery · ₹3,000 shipping extra</b></div>
+      <div class="rrow"><span>Vendor contact</span><b>+91 91300 39898</b></div>
+    </div>
+    <div class="rfoot"><a href="https://wa.me/919130039898" target="_blank" rel="noopener">Open WhatsApp chat →</a>
+    <div class="note">The agent sent the confirmation and stopped here. Payment and dispatch are arranged directly between you and the vendor.</div></div>
+  </div>`;
+}
+async function rejectDeal(){
+  $("chat").insertAdjacentHTML("beforeend",`<div class="row out"><div class="bub out"><div class="lab">VendorScoutAI (AI)</div>धन्यवाद, फ़िलहाल हम आगे नहीं बढ़ रहे हैं। भविष्य में ज़रूर संपर्क करेंगे।</div></div>`);
+  $("tail").innerHTML=`<div class="alert">Deal rejected. No binding commitment was made.</div>`;
+}
+</script>
+</body>
+</html>
