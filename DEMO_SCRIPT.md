@@ -9,20 +9,22 @@ pytest tests/test_security.py -q          # must be 5 passed
 pytest tests/test_pipeline_stub.py -q     # must pass before anything else
 ```
 
-**Twilio Sandbox opt-in expires after 24h of inactivity.** Re-send the join
-phrase from the vendor phone to `+14155238886` right before recording, every
-time. This is the #1 cause of a dead demo.
+**Live WhatsApp needs the webhook running.** `python webhook_server.py` plus a
+tunnel (`ngrok http 8000`) pointed at Meta's webhook config — inbound replies
+only arrive that way. Confirm both are up right before recording.
 
-### Two run modes — know which you're in
+### Three run modes — know which you're in
 
-| Mode | `.env` setting | Use when |
+| Mode | Setting | Use when |
 |---|---|---|
-| **Live WhatsApp** | `VENDORSCOUT_WHATSAPP_STUB=0` | Main demo — real messages to your phone |
-| **Offline safe** | `VENDORSCOUT_WHATSAPP_STUB=1` | Backup if Twilio/wifi fails on the day |
+| **Live WhatsApp** | `VENDORSCOUT_WHATSAPP_STUB=0` | Main demo — real messages to your phone via Meta Cloud API |
+| **Offline safe (scripted)** | `VENDORSCOUT_WHATSAPP_STUB=1` | Backup if Meta/webhook/wifi fails on the day |
+| **Load demo (fully static)** | sidebar **Load demo** button | Zero network — a complete pre-recorded run, no API key needed |
 
-The offline mode runs the identical agent chain and guardrail with scripted
+The scripted mode runs the identical agent chain and guardrail with canned
 vendor replies. **Record a backup video in this mode first** — it costs 3
-minutes and guarantees you have something to submit.
+minutes and guarantees you have something to submit. The **Load demo** button
+is the ultimate fallback if the whole environment is unreachable.
 
 ---
 
@@ -94,9 +96,10 @@ Click **Accept & Lock Deal**. Show the confirmation arriving on the phone.
 ## Judge Q&A — have these ready
 
 **"Is this real WhatsApp?"**
-Yes, via Twilio's WhatsApp Sandbox to a consenting test number, not real
-unknown vendors. Meta's production API needs multi-week business verification.
-We state this openly rather than implying production scale.
+Yes, via the Meta WhatsApp Cloud API to a consenting test number, not real
+unknown vendors. Production-scale use needs Meta business verification, which
+wasn't feasible before the finale. We state this openly rather than implying
+production scale.
 
 **"Why is search stubbed?"**
 Live `google_search` grounding is implemented and switchable with one env flag
@@ -123,10 +126,10 @@ ADK in-process session state only — no external DB. Data flows via `output_key
 
 | Symptom | Fix |
 |---|---|
-| No WhatsApp arrives | Sandbox opt-in expired — re-send join phrase |
-| Agent hangs on reply | `REPLY_TIMEOUT_SECONDS=120`; just reply faster, or narrate the wait |
+| No WhatsApp arrives | Webhook/tunnel down — check `python webhook_server.py` and `ngrok http 8000` are both running and the Meta webhook URL still matches |
+| Agent hangs on reply | `REPLY_TIMEOUT_SECONDS=180`; just reply faster, or narrate the wait |
 | Model error | Swap `GEMINI_MODEL` in `.env`, restart Streamlit |
-| Anything else | Switch to `VENDORSCOUT_WHATSAPP_STUB=1` and continue — same flow, scripted replies |
+| Anything else | Switch to `VENDORSCOUT_WHATSAPP_STUB=1`, or click **Load demo** and continue — same flow, no live dependency |
 
 **Always fully restart Streamlit (Ctrl+C) after editing `.env` or any `tools/` file.**
 Streamlit does not reload already-imported modules.

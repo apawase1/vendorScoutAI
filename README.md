@@ -111,7 +111,7 @@ tools/
   sourcing_tools.py       # stub vendor data + demo priority-vendor constants
   verification_tools.py   # deterministic trust heuristics
   negotiation_tools.py    # WhatsApp send/receive, vendor targeting + fallback, deal proposal
-  whatsapp_provider.py    # transport abstraction — Meta Cloud API or Twilio
+  whatsapp_provider.py    # Meta WhatsApp Cloud API transport + inbox polling
   security.py             # ⭐ deal-lock guardrail callback
   demo_data.py            # frozen full-pipeline state for the "Load demo" button
 docs/

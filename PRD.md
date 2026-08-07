@@ -18,22 +18,23 @@ Primary: small business owners / artisans in India sourcing materials (textiles,
 
 1. Owner enters requirement in the Streamlit dashboard and clicks Start Sourcing.
 2. Sourcing Agent finds 3–6 candidate vendors via Google Search grounding.
-3. Verification Agent scores trust (price sanity, contactability, footprint, reviews) and ranks the top 3.
-4. Negotiation Agent opens WhatsApp with the top vendor, disclosing itself as an AI assistant, and negotiates up to 3 counter rounds toward the budget.
-5. Agent records the best terms as a proposal and attempts finalization — the Deal-Lock Guardrail blocks it.
-6. Owner reviews the proposal and transcript, then Locks (agent sends binding confirmation) or Rejects (agent declines politely).
+3. Verification Agent scores trust (price sanity, contactability, footprint, reviews) and ranks the top 3, then the pipeline halts.
+4. Owner picks which ranked vendor to contact first.
+5. Negotiation Agent opens WhatsApp with that vendor, disclosing itself as an AI assistant, asks the vendor's preferred language (English/Hindi/Kannada), and negotiates up to 3 counter rounds toward the budget in that language — falling back to the next-ranked vendor on its own if terms can't be met.
+6. Agent records the best terms as a proposal (translated back to English) and attempts finalization — the Deal-Lock Guardrail blocks it.
+7. Owner reviews the proposal and transcript, then Locks (agent sends binding confirmation) or Rejects (agent declines politely).
 
 ## Requirements
 
-**Functional:** structured vendor extraction from grounded search; deterministic + LLM trust scoring with explicit red flags; autonomous WhatsApp back-and-forth via Twilio Sandbox; live activity trace; human Lock/Reject approval gate; stub mode for offline demo.
+**Functional:** structured vendor extraction from grounded search; deterministic + LLM trust scoring with explicit red flags; owner-gated vendor selection before negotiation begins; autonomous multilingual WhatsApp back-and-forth via the Meta WhatsApp Cloud API with automatic vendor fallback; live activity trace; human Lock/Reject approval gate; stub mode plus a fully static offline demo for reproducible demos.
 
 **Safety (non-negotiable):** mandatory AI self-disclosure in the first vendor message; `before_tool_callback` blocklist rejecting payment/confirmation/commitment tools unless `human_approved=True`; guardrail is a distinct, auditable layer with logged blocked attempts.
 
-**Non-functional:** in-process session state only (no external DB); single API-key setup; demo honesty — Twilio Sandbox test number, not Meta's Business API.
+**Non-functional:** in-process session state only (no external DB); single API-key setup; demo honesty — a consenting test number on the Meta Cloud API, not real unknown vendors.
 
 ## Out of scope
 
-Payments execution, multi-vendor parallel negotiation, Meta WhatsApp Business API, persistent vendor database, authentication.
+Payments execution, multi-vendor parallel negotiation, persistent vendor database, authentication.
 
 ## Success criteria
 

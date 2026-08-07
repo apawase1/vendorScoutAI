@@ -1,9 +1,9 @@
-"""WhatsApp transport layer — Meta Cloud API or Twilio, selected by env.
+"""WhatsApp transport layer — Meta Cloud API.
 
 Meta's Cloud API has no polling endpoint for inbound messages: replies arrive
 by webhook only. `webhook_server.py` receives them and appends to a local
 inbox file, which `read_inbox` polls — keeping the agent's synchronous
-send -> wait_for_reply loop intact regardless of provider.
+send -> wait_for_reply loop intact.
 
 Free-text note: Meta only allows free-form (non-template) messages inside a
 24h window opened by an inbound message from the recipient. For the demo the
@@ -19,10 +19,6 @@ from typing import Any, Optional
 
 INBOX_PATH = Path(os.getenv("WHATSAPP_INBOX", "whatsapp_inbox.json"))
 GRAPH_VERSION = os.getenv("META_GRAPH_VERSION", "v25.0")
-
-
-def provider() -> str:
-    return os.getenv("WHATSAPP_PROVIDER", "meta").lower()
 
 
 def _digits(number: str) -> str:
@@ -52,7 +48,7 @@ def clear_inbox() -> None:
 
 # ---------------------------------------------------------------- sending
 
-def _send_meta(body: str) -> dict[str, Any]:
+def send_message(body: str) -> dict[str, Any]:
     import requests
 
     token = os.environ["META_ACCESS_TOKEN"]
@@ -74,28 +70,6 @@ def _send_meta(body: str) -> dict[str, Any]:
         return {"status": "failed", "error": resp.text[:400]}
     data = resp.json()
     return {"status": "sent", "id": data.get("messages", [{}])[0].get("id", "")}
-
-
-def _send_twilio(body: str) -> dict[str, Any]:
-    from twilio.rest import Client
-
-    client = Client(os.environ["TWILIO_ACCOUNT_SID"], os.environ["TWILIO_AUTH_TOKEN"])
-    kwargs: dict[str, Any] = {
-        "from_": os.getenv("TWILIO_WHATSAPP_FROM", "whatsapp:+14155238886"),
-        "to": os.environ["VENDOR_WHATSAPP_TO"],
-    }
-    content_sid = os.getenv("TWILIO_CONTENT_SID")
-    if content_sid:
-        kwargs["content_sid"] = content_sid
-        kwargs["content_variables"] = json.dumps({"1": body})
-    else:
-        kwargs["body"] = body
-    msg = client.messages.create(**kwargs)
-    return {"status": msg.status, "id": msg.sid}
-
-
-def send_message(body: str) -> dict[str, Any]:
-    return _send_twilio(body) if provider() == "twilio" else _send_meta(body)
 
 
 # -------------------------------------------------------------- receiving

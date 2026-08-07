@@ -1,6 +1,6 @@
 """Negotiation Agent function tools — WhatsApp messaging + deal proposal.
 
-Transport (Meta Cloud API or Twilio) lives in tools/whatsapp_provider.py.
+Transport (Meta WhatsApp Cloud API) lives in tools/whatsapp_provider.py.
 This module handles negotiation logic: who we're talking to, transcript
 logging, vendor switching, and the proposal/finalize split the deal-lock
 guardrail gates.
