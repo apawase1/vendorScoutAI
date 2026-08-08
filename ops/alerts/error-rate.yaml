@@ -1,0 +1,38 @@
+# Symptom: users are getting failed requests.
+# Actionable: a sustained burst of 5xx responses means something is broken
+# right now — always worth a look. Not "CPU is at 42%" noise.
+displayName: "VendorScoutAI UI — error rate"
+combiner: OR
+conditions:
+  - displayName: "5xx responses > 5 in 5 minutes"
+    conditionThreshold:
+      filter: >
+        resource.type="cloud_run_revision"
+        AND resource.labels.service_name="vendorscoutai-ui"
+        AND metric.type="run.googleapis.com/request_count"
+        AND metric.labels.response_code_class="5xx"
+      aggregations:
+        - alignmentPeriod: 300s
+          perSeriesAligner: ALIGN_RATE
+          crossSeriesReducer: REDUCE_SUM
+      comparison: COMPARISON_GT
+      thresholdValue: 5
+      duration: 0s
+      trigger:
+        count: 1
+notificationChannels:
+  - "${NOTIFICATION_CHANNEL}"
+alertStrategy:
+  autoClose: 86400s
+documentation:
+  mimeType: text/markdown
+  content: |
+    **Symptom:** the UI is returning server errors to real users.
+
+    **Likely causes:** Gemini/ADK outage or quota exhaustion (check the
+    `gemini_adk` circuit breaker — see the companion `circuit-breaker-open.yaml`
+    alert), a bad deploy, or Cloud Run instance startup failures.
+
+    **First steps:** check Cloud Run logs for the `vendorscoutai-ui` service
+    filtered to `severity>=ERROR`; check the most recent revision's traffic
+    split — roll back if the error rate started right after a deploy.

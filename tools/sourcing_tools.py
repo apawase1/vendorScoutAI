@@ -9,10 +9,11 @@ from __future__ import annotations
 import os
 
 # The demo vendor's WhatsApp contact — a real, consenting number standing in
-# for the vendor persona (see architecture's demo-scoping note). Overridable
-# so this file never needs hand-editing again.
-DEMO_VENDOR_CONTACT = os.getenv("DEMO_PRIORITY_VENDOR_CONTACT", "+916363645247")
-DEMO_VENDOR_NAME = os.getenv("DEMO_PRIORITY_VENDOR_NAME", "Aditya Materials")
+# for the vendor persona (see architecture's demo-scoping note). No default:
+# every deployment sets its own via env, so no one's personal phone number
+# ships baked into the image or the source tree.
+DEMO_VENDOR_CONTACT = os.getenv("DEMO_PRIORITY_VENDOR_CONTACT", "")
+DEMO_VENDOR_NAME = os.getenv("DEMO_PRIORITY_VENDOR_NAME", "Priority Vendor")
 
 STUB_VENDORS = [
     {

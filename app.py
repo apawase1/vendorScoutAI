@@ -561,6 +561,14 @@ if pending:
     )
 
 state = st.session_state.get("pipeline_state")
+if state and state.get("_service_unavailable"):
+    st.error(
+        "🔌 The AI service is temporarily unavailable after repeated failures "
+        "(circuit breaker open) — this protects you from a long hang on every "
+        "click while it's down. It will retry automatically in under a "
+        "minute; try again shortly."
+    )
+
 if state:
     if st.session_state.get("demo_mode"):
         st.caption("Showing a pre-recorded demo run — no live agents or WhatsApp calls.")

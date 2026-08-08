@@ -1,0 +1,47 @@
+# Local dev / staging convenience — runs both roles of the image plus a
+# Redis instance for the shared inbox, so the multi-instance-safe path is
+# exercised locally too, not just in production. Not used in CI or by the
+# Cloud Run deploy — those build/push the same image and run each role as
+# its own Cloud Run service.
+#
+# Usage:
+#   cp .env.example .env   # fill in your values
+#   docker compose up --build
+#   UI:      http://localhost:8501
+#   Webhook: http://localhost:8000/health
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  ui:
+    build: .
+    env_file: .env
+    environment:
+      SERVICE_ROLE: ui
+      PORT: 8501
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8501:8501"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  webhook:
+    build: .
+    env_file: .env
+    environment:
+      SERVICE_ROLE: webhook
+      PORT: 8000
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy

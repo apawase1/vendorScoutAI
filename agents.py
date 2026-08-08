@@ -25,6 +25,7 @@ from tools.negotiation_tools import (
     try_next_vendor,
     wait_for_vendor_reply,
 )
+from tools.circuit_breaker import CircuitBreaker, CircuitOpenError
 from tools.security import APPROVAL_FLAG, deal_lock_guardrail
 from tools.sourcing_tools import STUB_VENDORS
 from tools.verification_tools import assess_vendor
@@ -35,6 +36,11 @@ APP_NAME = "vendorscoutai"
 MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 
 EventCallback = Optional[Callable[[Event], None]]
+
+# Gemini/ADK is a dependency we don't control. If it's failing hard (outage,
+# quota exhaustion, auth breakage) there's no point making every user wait
+# through a full timeout on every single click — trip fast, recover fast.
+_gemini_breaker = CircuitBreaker(name="gemini_adk", fail_max=3, reset_timeout_s=20)
 
 
 def stub_mode() -> bool:
@@ -83,7 +89,7 @@ def _inject_demo_vendor(callback_context: Any) -> None:
     target = os.getenv("DEMO_PRIORITY_VENDOR_CONTACT")
     if not target:
         return
-    name = os.getenv("DEMO_PRIORITY_VENDOR_NAME", "Aditya Materials")
+    name = os.getenv("DEMO_PRIORITY_VENDOR_NAME", "Priority Vendor")
     raw = callback_context.state.get("discovered_vendors")
     try:
         vendors = _extract_json(raw) if raw else []
@@ -333,11 +339,21 @@ class VendorScout:
     async def _drive(self, runner: Runner, text: str, on_event: EventCallback) -> dict:
         await self._session()
         message = types.Content(role="user", parts=[types.Part(text=text)])
-        async for event in runner.run_async(
-            user_id=self.user_id, session_id=self.session_id, new_message=message
-        ):
-            if on_event:
-                on_event(event)
+
+        async def _run() -> None:
+            async for event in runner.run_async(
+                user_id=self.user_id, session_id=self.session_id, new_message=message
+            ):
+                if on_event:
+                    on_event(event)
+
+        try:
+            await _gemini_breaker.acall(_run)
+        except CircuitOpenError as exc:
+            # Fail visibly but gracefully — surface as state, not a crash.
+            state = await self.state()
+            state["_service_unavailable"] = str(exc)
+            return state
         return await self.state()
 
     async def run(self, requirement: str, on_event: EventCallback = None) -> dict:
