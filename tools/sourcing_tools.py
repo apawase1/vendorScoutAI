@@ -12,8 +12,8 @@ import os
 # for the vendor persona (see architecture's demo-scoping note). No default:
 # every deployment sets its own via env, so no one's personal phone number
 # ships baked into the image or the source tree.
-DEMO_VENDOR_CONTACT = os.getenv("DEMO_PRIORITY_VENDOR_CONTACT", "")
-DEMO_VENDOR_NAME = os.getenv("DEMO_PRIORITY_VENDOR_NAME", "Priority Vendor")
+DEMO_VENDOR_CONTACT = os.getenv("DEMO_PRIORITY_VENDOR_CONTACT", "+919130039898")
+DEMO_VENDOR_NAME = os.getenv("DEMO_PRIORITY_VENDOR_NAME", "Aditya Materials")
 
 STUB_VENDORS = [
     {
