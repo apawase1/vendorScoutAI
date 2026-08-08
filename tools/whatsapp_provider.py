@@ -1,54 +1,55 @@
 """WhatsApp transport layer — Meta Cloud API.
 
 Meta's Cloud API has no polling endpoint for inbound messages: replies arrive
-by webhook only. `webhook_server.py` receives them and appends to a local
-inbox file, which `read_inbox` polls — keeping the agent's synchronous
-send -> wait_for_reply loop intact.
+by webhook only. `webhook_server.py` receives them and appends to the shared
+inbox (see tools/inbox_store.py — Redis in production, a local file for
+zero-setup local dev), which `read_inbox` polls — keeping the agent's
+synchronous send -> wait_for_reply loop intact regardless of backend.
 
 Free-text note: Meta only allows free-form (non-template) messages inside a
 24h window opened by an inbound message from the recipient. For the demo the
 vendor sends one message first, which opens that window.
+
+The outbound call to Meta's Graph API is wrapped in a circuit breaker
+(tools/circuit_breaker.py) — it's a third-party dependency we don't control,
+and after Meta trips repeatedly there's no point hammering it (or making the
+user wait through the full 30s timeout) on every subsequent message.
 """
 from __future__ import annotations
 
-import json
 import os
 import time
-from pathlib import Path
 from typing import Any, Optional
 
-INBOX_PATH = Path(os.getenv("WHATSAPP_INBOX", "whatsapp_inbox.json"))
+from tools.circuit_breaker import CircuitBreaker, CircuitOpenError
+from tools.inbox_store import get_store
+
 GRAPH_VERSION = os.getenv("META_GRAPH_VERSION", "v25.0")
+
+_meta_breaker = CircuitBreaker(name="meta_whatsapp", fail_max=3, reset_timeout_s=30)
 
 
 def _digits(number: str) -> str:
     return "".join(c for c in number if c.isdigit())
 
 
-# ------------------------------------------------------------- inbox file
+# ------------------------------------------------------------- inbox
 
 def read_inbox() -> list[dict[str, Any]]:
-    if not INBOX_PATH.exists():
-        return []
-    try:
-        return json.loads(INBOX_PATH.read_text() or "[]")
-    except json.JSONDecodeError:
-        return []
+    return get_store().read()
 
 
 def append_inbox(entry: dict[str, Any]) -> None:
-    messages = read_inbox()
-    messages.append(entry)
-    INBOX_PATH.write_text(json.dumps(messages, indent=2))
+    get_store().append(entry)
 
 
 def clear_inbox() -> None:
-    INBOX_PATH.write_text("[]")
+    get_store().clear()
 
 
 # ---------------------------------------------------------------- sending
 
-def send_message(body: str) -> dict[str, Any]:
+def _post_to_meta(body: str) -> dict[str, Any]:
     import requests
 
     token = os.environ["META_ACCESS_TOKEN"]
@@ -64,12 +65,25 @@ def send_message(body: str) -> dict[str, Any]:
             "type": "text",
             "text": {"preview_url": False, "body": body},
         },
-        timeout=30,
+        timeout=10,
     )
     if resp.status_code >= 400:
-        return {"status": "failed", "error": resp.text[:400]}
+        raise RuntimeError(f"Meta API {resp.status_code}: {resp.text[:400]}")
     data = resp.json()
     return {"status": "sent", "id": data.get("messages", [{}])[0].get("id", "")}
+
+
+def send_message(body: str) -> dict[str, Any]:
+    try:
+        return _meta_breaker.call(_post_to_meta, body)
+    except CircuitOpenError:
+        return {
+            "status": "failed",
+            "error": "meta_whatsapp circuit open — too many recent failures, "
+                     "skipping call to avoid piling up latency",
+        }
+    except Exception as exc:  # noqa: BLE001 — surface as a normal tool result
+        return {"status": "failed", "error": str(exc)[:400]}
 
 
 # -------------------------------------------------------------- receiving

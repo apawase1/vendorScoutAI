@@ -111,16 +111,29 @@ tools/
   sourcing_tools.py       # stub vendor data + demo priority-vendor constants
   verification_tools.py   # deterministic trust heuristics
   negotiation_tools.py    # WhatsApp send/receive, vendor targeting + fallback, deal proposal
-  whatsapp_provider.py    # Meta WhatsApp Cloud API transport + inbox polling
+  whatsapp_provider.py    # Meta WhatsApp Cloud API transport, circuit-breaker wrapped
+  inbox_store.py          # shared WhatsApp inbox — Redis in prod, local file for dev
+  circuit_breaker.py      # small breaker used around Meta + Gemini/ADK calls
   security.py             # ⭐ deal-lock guardrail callback
   demo_data.py            # frozen full-pipeline state for the "Load demo" button
 docs/
   index.html              # static, dependency-free replica for GitHub Pages hosting
+ops/alerts/                # Cloud Monitoring alert policies (error rate, latency, saturation, circuit breaker)
+.github/workflows/         # ci.yml (test+build) and deploy.yml (Cloud Run deploy)
+Dockerfile, docker-compose.yml, gunicorn.conf.py, entrypoint.sh
 tests/
 architecture-diagram.md   # full Mermaid diagram + design iteration history
 PRD.md
 DEMO_SCRIPT.md            # demo runbook + judge Q&A
+DEPLOY.md                 # production deployment runbook — Docker, CI/CD, Cloud Run, alerting
 ```
+
+## Production deployment
+
+See **[DEPLOY.md](DEPLOY.md)** for the full runbook: Docker image, GitHub
+Actions CI/CD to Cloud Run, externalized config via Secret Manager, graceful
+shutdown, circuit breakers on Gemini/ADK and Meta's API, and symptom-based
+alerting (error rate, latency, saturation, circuit-breaker trips).
 
 ---
 

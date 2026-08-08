@@ -1,0 +1,37 @@
+# Symptom: the app feels slow.
+# Actionable: p95 request latency crossing a threshold for a sustained
+# window means real users are waiting — not a single slow outlier request.
+displayName: "VendorScoutAI UI — p95 latency"
+combiner: OR
+conditions:
+  - displayName: "p95 latency > 5s for 5 minutes"
+    conditionThreshold:
+      filter: >
+        resource.type="cloud_run_revision"
+        AND resource.labels.service_name="vendorscoutai-ui"
+        AND metric.type="run.googleapis.com/request_latencies"
+      aggregations:
+        - alignmentPeriod: 300s
+          perSeriesAligner: ALIGN_PERCENTILE_95
+          crossSeriesReducer: REDUCE_MEAN
+      comparison: COMPARISON_GT
+      thresholdValue: 5000  # ms
+      duration: 300s
+      trigger:
+        count: 1
+notificationChannels:
+  - "${NOTIFICATION_CHANNEL}"
+alertStrategy:
+  autoClose: 86400s
+documentation:
+  mimeType: text/markdown
+  content: |
+    **Symptom:** users are waiting noticeably long for the app to respond.
+
+    **Likely causes:** Gemini API latency degradation, cold starts if
+    min-instances is 0 and traffic is bursty, or Redis latency on the
+    shared-inbox lookups during negotiation.
+
+    **First steps:** check whether latency correlates with cold starts
+    (revision instance count vs request count); if it's every request, check
+    upstream Gemini API status before assuming it's our code.

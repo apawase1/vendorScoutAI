@@ -1,0 +1,41 @@
+# Symptom: a dependency we don't control (Gemini/ADK or Meta's Graph API)
+# is failing hard enough that our own circuit breaker tripped. Actionable by
+# definition — the breaker only opens after `fail_max` consecutive failures
+# (tools/circuit_breaker.py), so this is never a single-request blip.
+#
+# Requires the log-based metric created by create-log-metrics.sh first —
+# this policy references it by name.
+displayName: "VendorScoutAI — circuit breaker opened"
+combiner: OR
+conditions:
+  - displayName: "Any circuit_breaker open event"
+    conditionThreshold:
+      filter: >
+        resource.type="cloud_run_revision"
+        AND metric.type="logging.googleapis.com/user/vendorscoutai_circuit_breaker_open"
+      aggregations:
+        - alignmentPeriod: 60s
+          perSeriesAligner: ALIGN_COUNT
+          crossSeriesReducer: REDUCE_SUM
+      comparison: COMPARISON_GT
+      thresholdValue: 0
+      duration: 0s
+      trigger:
+        count: 1
+notificationChannels:
+  - "${NOTIFICATION_CHANNEL}"
+alertStrategy:
+  autoClose: 86400s
+documentation:
+  mimeType: text/markdown
+  content: |
+    **Symptom:** Gemini/ADK or Meta's WhatsApp API has failed 3+ times in a
+    row and VendorScoutAI's own circuit breaker has opened to stop piling up
+    latency on every subsequent request (tools/circuit_breaker.py).
+
+    **First steps:** check the upstream provider's status page first
+    (Google AI status / Meta status) — this almost always means the
+    dependency is down or rate-limiting us, not a bug in our code. The
+    breaker auto-recovers (half-open probe) after its reset window, so no
+    action is required to "fix" the breaker itself — the action is
+    understanding *why* the dependency failed.
