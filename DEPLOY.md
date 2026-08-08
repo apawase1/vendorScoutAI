@@ -77,15 +77,34 @@ echo -n "your-value" | gcloud secrets versions add GOOGLE_API_KEY --data-file=-
 # secrets if you don't want a guaranteed demo vendor in production.
 ```
 
-Grant the deployer (and Cloud Run's runtime service account) access:
+Grant access to **two** service accounts — they're different identities
+doing different jobs, and both need it:
+
+- `vendorscoutai-deployer@...` — runs the `gcloud run deploy` command from CI.
+- The Cloud Run **runtime** service account — what the container actually
+  runs as once deployed, which is what resolves `--set-secrets` at
+  container start. Unless you set `--service-account` explicitly in
+  `deploy.yml` (we don't, to keep setup simple), this defaults to the
+  project's Compute Engine default service account,
+  `PROJECT_NUMBER-compute@developer.gserviceaccount.com` — find your
+  project number with `gcloud projects describe $PROJECT_ID --format="value(projectNumber)"`.
+
+Skipping the second one is a common trip-up: the deploy step itself
+succeeds, then Cloud Run fails to start the revision with a "Permission
+denied on secret ... Revision service account" error.
 
 ```bash
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format="value(projectNumber)")
+
 for name in GOOGLE_API_KEY META_ACCESS_TOKEN META_PHONE_NUMBER_ID \
             META_VERIFY_TOKEN META_APP_SECRET VENDOR_WHATSAPP_TO \
             DEMO_PRIORITY_VENDOR_CONTACT DEMO_PRIORITY_VENDOR_NAME REDIS_URL; do
-  gcloud secrets add-iam-policy-binding "$name" \
-    --member="serviceAccount:vendorscoutai-deployer@${PROJECT_ID}.iam.gserviceaccount.com" \
-    --role="roles/secretmanager.secretAccessor"
+  for member in "serviceAccount:vendorscoutai-deployer@${PROJECT_ID}.iam.gserviceaccount.com" \
+                "serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"; do
+    gcloud secrets add-iam-policy-binding "$name" \
+      --member="$member" \
+      --role="roles/secretmanager.secretAccessor"
+  done
 done
 ```
 
